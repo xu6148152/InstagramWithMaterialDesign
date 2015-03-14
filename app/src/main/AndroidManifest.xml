@@ -17,7 +17,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".activity.CommentsActivity" />
+        <activity android:name=".activity.CommentsActivity" android:theme="@style/AppTheme.CommentsActivity"/>
     </application>
 
 </manifest>
