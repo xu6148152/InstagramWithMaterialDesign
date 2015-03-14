@@ -1,39 +1,117 @@
 package demo.binea.com.instagramwithmaterialdesign;
 
-import android.support.v7.app.ActionBarActivity;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.animation.OvershootInterpolator;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+
+import butterknife.ButterKnife;
+import butterknife.InjectView;
+import demo.binea.com.instagramwithmaterialdesign.adapter.FeedAdapter;
 
 
 public class MainActivity extends ActionBarActivity {
+
+	@InjectView(R.id.toolbar)
+	Toolbar toolbar;
+	@InjectView(R.id.rvFeed)
+	RecyclerView rvFeed;
+	@InjectView(R.id.btnCreate)
+	ImageButton btnCreate;
+	@InjectView(R.id.ivLogo)
+	ImageView ivLogo;
+
+	private MenuItem inboxMenuItem;
+	private FeedAdapter feedAdapter;
+	private boolean pendingIntroAnimation;
+
+	private static final int ANIM_DURATION_FAB = 400;
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		ButterKnife.inject(this);
+
+		if (savedInstanceState == null) {
+			pendingIntroAnimation = true;
+		}
+
+		setupToolbar();
+		setupFeed();
 	}
 
+	private void setupToolbar() {
+		setSupportActionBar(toolbar);
+		toolbar.setNavigationIcon(R.drawable.ic_menu_white);
+	}
+
+	private void setupFeed() {
+		LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+		rvFeed.setLayoutManager(linearLayoutManager);
+		feedAdapter = new FeedAdapter(this);
+		rvFeed.setAdapter(feedAdapter);
+	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.menu_main, menu);
+		inboxMenuItem = menu.findItem(R.id.action_inbox);
+		inboxMenuItem.setActionView(R.layout.menu_item_view);
+		if (pendingIntroAnimation) {
+			pendingIntroAnimation = false;
+			startIntroAnimation();
+		}
 		return true;
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
+	private static final int ANIM_DURATION_TOOLBAR = 300;
 
-		//noinspection SimplifiableIfStatement
-		if (id == R.id.action_settings) {
-			return true;
-		}
+	private void startIntroAnimation() {
+		btnCreate.setTranslationY(2 * getResources().getDimensionPixelOffset(R.dimen.btn_fab_size));
 
-		return super.onOptionsItemSelected(item);
+		int actionbarSize = Utils.dpToPx(56);
+		toolbar.setTranslationY(-actionbarSize);
+		ivLogo.setTranslationY(-actionbarSize);
+		inboxMenuItem.getActionView().setTranslationY(-actionbarSize);
+
+		toolbar.animate()
+				.translationY(0)
+				.setDuration(ANIM_DURATION_TOOLBAR)
+				.setStartDelay(300);
+		ivLogo.animate()
+				.translationY(0)
+				.setDuration(ANIM_DURATION_TOOLBAR)
+				.setStartDelay(400);
+		inboxMenuItem.getActionView().animate()
+				.translationY(0)
+				.setDuration(ANIM_DURATION_TOOLBAR)
+				.setStartDelay(500)
+				.setListener(new AnimatorListenerAdapter() {
+					@Override
+					public void onAnimationEnd(Animator animation) {
+						startContentAnimation();
+					}
+				})
+				.start();
+	}
+
+	private void startContentAnimation() {
+		btnCreate.animate()
+				.translationY(0)
+				.setInterpolator(new OvershootInterpolator(1.f))
+				.setStartDelay(300)
+				.setDuration(ANIM_DURATION_FAB)
+				.start();
+		feedAdapter.updateItems();
 	}
 }
