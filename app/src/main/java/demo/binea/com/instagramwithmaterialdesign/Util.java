@@ -10,7 +10,7 @@ import android.view.WindowManager;
 /**
  * Created by xubinggui on 15/3/14.
  */
-public class Utils {
+public class Util {
 	private static int screenWidth = 0;
 	private static int screenHeight = 0;
 

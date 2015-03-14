@@ -11,19 +11,21 @@ import android.widget.ImageView;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
-import demo.binea.com.instagramwithmaterialdesign.Utils;
+import demo.binea.com.instagramwithmaterialdesign.Util;
 import demo.binea.com.instagramwithmaterialdesign.view.SquaredImageView;
 
 /**
  * Created by xubinggui on 15/3/14.
  */
-public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements View.OnClickListener {
 
 	private static final int ANIMATED_ITEMS_COUNT = 2;
 
 	private Context context;
 	private int lastAnimatedPosition = -1;
 	private int itemsCount = 0;
+
+	private OnFeedItemClickListener onFeedItemClickListener;
 
 	public FeedAdapter(Context context) {
 		this.context = context;
@@ -42,7 +44,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
 		if (position > lastAnimatedPosition) {
 			lastAnimatedPosition = position;
-			view.setTranslationY(Utils.getScreenHeight(context));
+			view.setTranslationY(Util.getScreenHeight(context));
 			view.animate()
 					.translationY(0)
 					.setInterpolator(new DecelerateInterpolator(3.f))
@@ -62,11 +64,23 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 			holder.ivFeedCenter.setImageResource(R.drawable.img_feed_center_2);
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_2);
 		}
+
+		holder.ivFeedBottom.setOnClickListener(this);
+		holder.ivFeedBottom.setTag(position);
 	}
 
 	@Override
 	public int getItemCount() {
 		return itemsCount;
+	}
+
+	@Override
+	public void onClick(View v) {
+		if (v.getId() == R.id.ivFeedBottom) {
+			if (onFeedItemClickListener != null) {
+				onFeedItemClickListener.onCommentsClick(v, (Integer) v.getTag());
+			}
+		}
 	}
 
 	public static class CellFeedViewHolder extends RecyclerView.ViewHolder {
@@ -84,5 +98,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 	public void updateItems() {
 		itemsCount = 10;
 		notifyDataSetChanged();
+	}
+
+	public void setOnFeedItemClickListener(OnFeedItemClickListener onFeedItemClickListener) {
+		this.onFeedItemClickListener = onFeedItemClickListener;
+	}
+
+	public interface OnFeedItemClickListener {
+		public void onCommentsClick(View v, int position);
 	}
 }
