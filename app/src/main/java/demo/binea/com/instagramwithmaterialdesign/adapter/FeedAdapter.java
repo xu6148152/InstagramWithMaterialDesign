@@ -6,13 +6,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.TextSwitcher;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
 import demo.binea.com.instagramwithmaterialdesign.Util;
-import demo.binea.com.instagramwithmaterialdesign.view.SquaredImageView;
 
 /**
  * Created by xubinggui on 15/3/14.
@@ -65,8 +67,8 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_2);
 		}
 
-		holder.ivFeedBottom.setOnClickListener(this);
-		holder.ivFeedBottom.setTag(position);
+		holder.btnComments.setOnClickListener(this);
+		holder.btnComments.setTag(position);
 	}
 
 	@Override
@@ -76,7 +78,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 
 	@Override
 	public void onClick(View v) {
-		if (v.getId() == R.id.ivFeedBottom) {
+		if (v.getId() == R.id.btnComments) {
 			if (onFeedItemClickListener != null) {
 				onFeedItemClickListener.onCommentsClick(v, (Integer) v.getTag());
 			}
@@ -85,14 +87,34 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 
 	public static class CellFeedViewHolder extends RecyclerView.ViewHolder {
 		@InjectView(R.id.ivFeedCenter)
-		SquaredImageView ivFeedCenter;
+		ImageView ivFeedCenter;
 		@InjectView(R.id.ivFeedBottom)
 		ImageView ivFeedBottom;
+		@InjectView(R.id.btnComments)
+		ImageButton btnComments;
+		@InjectView(R.id.btnLike)
+		ImageButton btnLike;
+		@InjectView(R.id.btnMore)
+		ImageButton btnMore;
+		@InjectView(R.id.vBgLike)
+		View vBgLike;
+		@InjectView(R.id.ivLike)
+		ImageView ivLike;
+		@InjectView(R.id.tsLikesCounter)
+		TextSwitcher tsLikesCounter;
+		@InjectView(R.id.ivUserProfile)
+		ImageView ivUserProfile;
+		@InjectView(R.id.vImageRoot)
+		FrameLayout vImageRoot;
+
+//		SendingProgressView vSendingProgress;
+		View vProgressBg;
 
 		public CellFeedViewHolder(View view) {
 			super(view);
 			ButterKnife.inject(this, view);
 		}
+
 	}
 
 	public void updateItems() {
