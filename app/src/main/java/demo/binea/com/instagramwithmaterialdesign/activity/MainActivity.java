@@ -20,9 +20,11 @@ import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
 import demo.binea.com.instagramwithmaterialdesign.Util;
 import demo.binea.com.instagramwithmaterialdesign.adapter.FeedAdapter;
+import demo.binea.com.instagramwithmaterialdesign.view.FeedContextMenu;
+import demo.binea.com.instagramwithmaterialdesign.view.FeedContextMenuManager;
 
 
-public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFeedItemClickListener {
+public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFeedItemClickListener, FeedContextMenu.OnFeedContextMenuItemClickListener {
 
 	@InjectView(R.id.toolbar)
 	Toolbar toolbar;
@@ -136,5 +138,30 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 
 		startActivity(intent);
 		overridePendingTransition(0, 0);
+	}
+
+	@Override
+	public void onMoreClick(View v, int tag) {
+		FeedContextMenuManager.getInstance().toggleContextMenuFromView(v, tag, this);
+	}
+
+	@Override
+	public void onReportClick(int feedItem) {
+		FeedContextMenuManager.getInstance().hideContextMenu();
+	}
+
+	@Override
+	public void onSharePhotoClick(int feedItem) {
+		FeedContextMenuManager.getInstance().hideContextMenu();
+	}
+
+	@Override
+	public void onCopyShareUrlClick(int feedItem) {
+		FeedContextMenuManager.getInstance().hideContextMenu();
+	}
+
+	@Override
+	public void onCancelClick(int feedItem) {
+		FeedContextMenuManager.getInstance().hideContextMenu();
 	}
 }
