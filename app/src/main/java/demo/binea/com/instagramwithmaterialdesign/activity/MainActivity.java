@@ -153,6 +153,15 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 	}
 
 	@Override
+	public void onProfileClick(View v, int position) {
+		int[] startingLocation = new int[2];
+		v.getLocationOnScreen(startingLocation);
+		startingLocation[0] += v.getWidth() / 2;
+		UserProfileActivity.startUserProfileFromLocation(startingLocation, this);
+		overridePendingTransition(0, 0);
+	}
+
+	@Override
 	public void onReportClick(int feedItem) {
 		FeedContextMenuManager.getInstance().hideContextMenu();
 	}

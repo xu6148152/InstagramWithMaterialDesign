@@ -103,6 +103,9 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 		holder.ivFeedCenter.setOnClickListener(this);
 		holder.ivFeedCenter.setTag(holder);
 
+		holder.ivUserProfile.setOnClickListener(this);
+		holder.ivUserProfile.setTag(position);
+
 		if (likeAnimations.containsKey(holder)) {
 			likeAnimations.get(holder).cancel();
 		}
@@ -147,6 +150,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 					animatePhotoLike(holder);
 					updateHeartButton(holder, false);
 				}
+				break;
+
+			case R.id.ivUserProfile:
+				if(onFeedItemClickListener != null){
+					onFeedItemClickListener.onProfileClick(v, (Integer)v.getTag());
+				}
+				break;
 		}
 	}
 
@@ -196,6 +206,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	public interface OnFeedItemClickListener {
 		public void onCommentsClick(View v, int position);
 		public void onMoreClick(View v,int tag);
+		public void onProfileClick(View v, int position);
 	}
 
 	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated) {
