@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,12 +21,14 @@ import butterknife.ButterKnife;
 import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
 import demo.binea.com.instagramwithmaterialdesign.Util;
+import demo.binea.com.instagramwithmaterialdesign.Utils.DrawerLayoutInstaller;
 import demo.binea.com.instagramwithmaterialdesign.adapter.FeedAdapter;
 import demo.binea.com.instagramwithmaterialdesign.view.FeedContextMenu;
 import demo.binea.com.instagramwithmaterialdesign.view.FeedContextMenuManager;
+import demo.binea.com.instagramwithmaterialdesign.view.GlobalMenuView;
 
 
-public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFeedItemClickListener, FeedContextMenu.OnFeedContextMenuItemClickListener {
+public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFeedItemClickListener, FeedContextMenu.OnFeedContextMenuItemClickListener{
 
 	@InjectView(R.id.toolbar)
 	Toolbar toolbar;
@@ -37,6 +40,7 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 	ImageView ivLogo;
 
 	private MenuItem inboxMenuItem;
+	private DrawerLayout drawerLayout;
 	private FeedAdapter feedAdapter;
 	private boolean pendingIntroAnimation;
 
@@ -52,8 +56,8 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 		if (savedInstanceState == null) {
 			pendingIntroAnimation = true;
 		}
-
 		setupToolbar();
+		setupDrawer();
 		setupFeed();
 	}
 
@@ -185,5 +189,17 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 	public boolean dispatchTouchEvent(MotionEvent ev) {
 		FeedContextMenuManager.getInstance().hideContextMenu();
 		return super.dispatchTouchEvent(ev);
+	}
+
+	private void setupDrawer() {
+		GlobalMenuView menuView = new GlobalMenuView(this);
+//		menuView.setOnHeaderClickListener(this);
+
+		drawerLayout = DrawerLayoutInstaller.from(this)
+				.drawerRoot(R.layout.drawer_root)
+				.drawerLeftView(menuView)
+				.drawerLeftWidth(Util.dpToPx(300))
+				.withNavigationIconToggler(toolbar)
+				.build();
 	}
 }

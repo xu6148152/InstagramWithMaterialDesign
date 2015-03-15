@@ -3,28 +3,32 @@ package demo.binea.com.instagramwithmaterialdesign.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
+import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
+import demo.binea.com.instagramwithmaterialdesign.Utils.DrawerLayoutInstaller;
 import demo.binea.com.instagramwithmaterialdesign.adapter.UserProfileAdapter;
 import demo.binea.com.instagramwithmaterialdesign.view.RevealBackgroundView;
 
 /**
  * Created by xubinggui on 15/3/15.
  */
-public class UserProfileActivity extends FragmentActivity implements RevealBackgroundView.OnStateChangeListener {
+public class UserProfileActivity extends ActionBarActivity implements RevealBackgroundView.OnStateChangeListener {
 	public static final String ARG_REVEAL_START_LOCATION = "reveal_start_location";
 
 	@InjectView(R.id.vRevealBackground)
 	RevealBackgroundView vRevealBackground;
 	@InjectView(R.id.rvUserProfile)
 	RecyclerView rvUserProfile;
+	@InjectView(R.id.toolbar)
+	Toolbar toolbar;
 
 	private UserProfileAdapter userPhotosAdapter;
 
@@ -39,8 +43,15 @@ public class UserProfileActivity extends FragmentActivity implements RevealBackg
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_user_profile);
 		ButterKnife.inject(this);
+		setupToolbar();
+		DrawerLayoutInstaller.from(this);
 		setupUserProfileGrid();
 		setupRevealBackground(savedInstanceState);
+	}
+
+	private void setupToolbar() {
+		setSupportActionBar(toolbar);
+		toolbar.setNavigationIcon(R.drawable.ic_menu_white);
 	}
 
 	private void setupRevealBackground(Bundle savedInstanceState) {
