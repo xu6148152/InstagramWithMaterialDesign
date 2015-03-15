@@ -17,8 +17,8 @@ import demo.binea.com.instagramwithmaterialdesign.Util;
 public class FeedContextMenuManager extends RecyclerView.OnScrollListener implements View.OnAttachStateChangeListener {
 
 	private FeedContextMenu contextMenuView;
-	private boolean isContextMenuShowing;
-	private boolean isContextMenuDismissing;
+	private boolean isContextMenuShowing = false;
+	private boolean isContextMenuDismissing = false;
 
 	public static FeedContextMenuManager getInstance(){
 		return FeedContextMenuManagerHolder.mFeedContextMenuManager;
@@ -36,7 +36,7 @@ public class FeedContextMenuManager extends RecyclerView.OnScrollListener implem
 
 	@Override
 	public void onViewDetachedFromWindow(View v) {
-
+		contextMenuView = null;
 	}
 
 	public void toggleContextMenuFromView(View openingView, int feedItem, FeedContextMenu.OnFeedContextMenuItemClickListener listener) {
@@ -95,7 +95,7 @@ public class FeedContextMenuManager extends RecyclerView.OnScrollListener implem
 	}
 
 	public void hideContextMenu() {
-		if (!isContextMenuDismissing) {
+		if (!isContextMenuDismissing && contextMenuView != null) {
 			isContextMenuDismissing = true;
 			performDismissAnimation();
 		}

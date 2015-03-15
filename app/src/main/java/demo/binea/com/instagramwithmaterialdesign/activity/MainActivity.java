@@ -10,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
 import android.widget.ImageButton;
@@ -72,6 +73,12 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 		feedAdapter = new FeedAdapter(this);
 		feedAdapter.setOnFeedItemClickListener(this);
 		rvFeed.setAdapter(feedAdapter);
+		rvFeed.setOnScrollListener(new RecyclerView.OnScrollListener() {
+			@Override
+			public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+				FeedContextMenuManager.getInstance().hideContextMenu();
+			}
+		});
 	}
 
 	@Override
@@ -163,5 +170,11 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 	@Override
 	public void onCancelClick(int feedItem) {
 		FeedContextMenuManager.getInstance().hideContextMenu();
+	}
+
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent ev) {
+		FeedContextMenuManager.getInstance().hideContextMenu();
+		return super.dispatchTouchEvent(ev);
 	}
 }
