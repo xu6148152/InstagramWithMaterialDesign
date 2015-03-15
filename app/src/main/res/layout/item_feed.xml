@@ -100,6 +100,7 @@
                     android:outAnimation="@anim/slide_out_likes_counter">
 
                     <TextView
+                        android:id="@+id/tv_like_counts"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="123 likes"

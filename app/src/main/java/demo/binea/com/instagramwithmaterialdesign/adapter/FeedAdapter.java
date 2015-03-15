@@ -16,6 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextSwitcher;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,7 +87,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 			holder.ivFeedCenter.setImageResource(R.drawable.img_feed_center_2);
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_2);
 		}
-
+		likesCount.put(position, 123);
 		updateLikesCounter(holder, false);
 		updateHeartButton(holder, false);
 
@@ -170,6 +171,8 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 		ImageView ivUserProfile;
 		@InjectView(R.id.vImageRoot)
 		FrameLayout vImageRoot;
+		@InjectView(R.id.tv_like_counts)
+		TextView tv_like_counts;
 
 //		SendingProgressView vSendingProgress;
 		View vProgressBg;
@@ -196,9 +199,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	}
 
 	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated) {
-		if(likesCount.size() < 1){
-			return;
-		}
+
 		int currentLikesCount = likesCount.get(holder.getPosition()) + 1;
 		String likesCountText = context.getResources().getQuantityString(
 				R.plurals.likes_count, currentLikesCount, currentLikesCount
