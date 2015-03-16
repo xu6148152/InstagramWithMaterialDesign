@@ -88,7 +88,7 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_2);
 		}
 		likesCount.put(position, 123);
-		updateLikesCounter(holder, false);
+		updateLikesCounter(holder, false, true);
 		updateHeartButton(holder, false);
 
 		holder.btnComments.setOnClickListener(this);
@@ -137,7 +137,11 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 				holder = (CellFeedViewHolder) v.getTag();
 				if (!likedPositions.contains(holder.getPosition())) {
 					likedPositions.add(holder.getPosition());
-					updateLikesCounter(holder, true);
+					updateLikesCounter(holder, true, true);
+					updateHeartButton(holder, true);
+				}else{
+					likedPositions.remove(holder.getPosition());
+					updateLikesCounter(holder,true, false);
 					updateHeartButton(holder, true);
 				}
 				break;
@@ -146,7 +150,12 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 				holder = (CellFeedViewHolder) v.getTag();
 				if (!likedPositions.contains(holder.getPosition())) {
 					likedPositions.add(holder.getPosition());
-					updateLikesCounter(holder, true);
+					updateLikesCounter(holder, true, true);
+					animatePhotoLike(holder);
+					updateHeartButton(holder, false);
+				}else{
+					likedPositions.remove(holder.getPosition());
+					updateLikesCounter(holder, true, false);
 					animatePhotoLike(holder);
 					updateHeartButton(holder, false);
 				}
@@ -209,9 +218,15 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 		public void onProfileClick(View v, int position);
 	}
 
-	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated) {
+	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated, boolean isLiked) {
 
-		int currentLikesCount = likesCount.get(holder.getPosition()) + 1;
+		int currentLikesCount;
+		if(isLiked) {
+			currentLikesCount = likesCount.get(holder.getPosition()) + 1;
+		}else{
+			currentLikesCount = likesCount.get(holder.getPosition()) - 1;
+		}
+
 		String likesCountText = context.getResources().getQuantityString(
 				R.plurals.likes_count, currentLikesCount, currentLikesCount
 		);
@@ -228,38 +243,10 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	private void updateHeartButton(final CellFeedViewHolder holder, boolean animated) {
 		if (animated) {
 			if (!likeAnimations.containsKey(holder)) {
-				AnimatorSet animatorSet = new AnimatorSet();
-				likeAnimations.put(holder, animatorSet);
-
-				ObjectAnimator rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 0f, 360f);
-				rotationAnim.setDuration(300);
-				rotationAnim.setInterpolator(ACCELERATE_INTERPOLATOR);
-
-				ObjectAnimator bounceAnimX = ObjectAnimator.ofFloat(holder.btnLike, "scaleX", 0.2f, 1f);
-				bounceAnimX.setDuration(300);
-				bounceAnimX.setInterpolator(OVERSHOOT_INTERPOLATOR);
-
-				ObjectAnimator bounceAnimY = ObjectAnimator.ofFloat(holder.btnLike, "scaleY", 0.2f, 1f);
-				bounceAnimY.setDuration(300);
-				bounceAnimY.setInterpolator(OVERSHOOT_INTERPOLATOR);
-				bounceAnimY.addListener(new AnimatorListenerAdapter() {
-					@Override
-					public void onAnimationStart(Animator animation) {
-						holder.btnLike.setImageResource(R.drawable.ic_heart_red);
-					}
-				});
-
-				animatorSet.play(rotationAnim);
-				animatorSet.play(bounceAnimX).with(bounceAnimY).after(rotationAnim);
-
-				animatorSet.addListener(new AnimatorListenerAdapter() {
-					@Override
-					public void onAnimationEnd(Animator animation) {
-						resetLikeAnimationState(holder);
-					}
-				});
-
-				animatorSet.start();
+				updateHeartButtonAnimation(holder, true);
+			}else{
+				//like to unlike
+				updateHeartButtonAnimation(holder, false);
 			}
 		} else {
 			if (likedPositions.contains(holder.getPosition())) {
@@ -271,13 +258,11 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	}
 
 	private void resetLikeAnimationState(CellFeedViewHolder holder) {
-		likeAnimations.remove(holder);
 		holder.vBgLike.setVisibility(View.GONE);
 		holder.ivLike.setVisibility(View.GONE);
 	}
 
 	private void animatePhotoLike(final CellFeedViewHolder holder) {
-		if (!likeAnimations.containsKey(holder)) {
 			holder.vBgLike.setVisibility(View.VISIBLE);
 			holder.ivLike.setVisibility(View.VISIBLE);
 
@@ -325,6 +310,53 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 				}
 			});
 			animatorSet.start();
+	}
+
+	private void updateHeartButtonAnimation(final CellFeedViewHolder holder, final boolean isLiked){
+		AnimatorSet animatorSet = new AnimatorSet();
+		if(isLiked) {
+			likeAnimations.put(holder, animatorSet);
+		}else{
+			likeAnimations.remove(holder);
 		}
+
+		ObjectAnimator rotationAnim;
+		if(isLiked) {
+			rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 0f, 360f);
+		}else{
+			rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 360f, 0f);
+		}
+		rotationAnim.setDuration(300);
+		rotationAnim.setInterpolator(ACCELERATE_INTERPOLATOR);
+
+		ObjectAnimator bounceAnimX = ObjectAnimator.ofFloat(holder.btnLike, "scaleX", 0.2f, 1f);
+		bounceAnimX.setDuration(300);
+		bounceAnimX.setInterpolator(OVERSHOOT_INTERPOLATOR);
+
+		ObjectAnimator bounceAnimY = ObjectAnimator.ofFloat(holder.btnLike, "scaleY", 0.2f, 1f);
+		bounceAnimY.setDuration(300);
+		bounceAnimY.setInterpolator(OVERSHOOT_INTERPOLATOR);
+		bounceAnimY.addListener(new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationStart(Animator animation) {
+				if (isLiked) {
+					holder.btnLike.setImageResource(R.drawable.ic_heart_outline_grey);
+				} else {
+					holder.btnLike.setImageResource(R.drawable.ic_heart_red);
+				}
+			}
+		});
+
+		animatorSet.play(rotationAnim);
+		animatorSet.play(bounceAnimX).with(bounceAnimY).after(rotationAnim);
+
+		animatorSet.addListener(new AnimatorListenerAdapter() {
+			@Override
+			public void onAnimationEnd(Animator animation) {
+				resetLikeAnimationState(holder);
+			}
+		});
+
+		animatorSet.start();
 	}
 }
