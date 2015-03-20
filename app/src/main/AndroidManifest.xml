@@ -32,6 +32,11 @@
 
         <activity android:name=".activity.CommentsActivity" android:theme="@style/AppTheme.CommentsActivity"/>
         <activity android:name=".activity.UserProfileActivity" />
+
+        <activity
+            android:name=".activity.TakePhotoActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.TransparentActivity.FullScreen" />
     </application>
 
 </manifest>

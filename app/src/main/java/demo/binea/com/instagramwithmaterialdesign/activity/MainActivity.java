@@ -19,6 +19,7 @@ import android.widget.ImageView;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import butterknife.OnClick;
 import demo.binea.com.instagramwithmaterialdesign.R;
 import demo.binea.com.instagramwithmaterialdesign.Util;
 import demo.binea.com.instagramwithmaterialdesign.Utils.DrawerLayoutInstaller;
@@ -201,5 +202,14 @@ public class MainActivity extends ActionBarActivity implements FeedAdapter.OnFee
 				.drawerLeftWidth(Util.dpToPx(300))
 				.withNavigationIconToggler(toolbar)
 				.build();
+	}
+
+	@OnClick(R.id.btnCreate)
+	public void onTakePhotoClick(){
+		int[] startingLocation = new int[2];
+		btnCreate.getLocationOnScreen(startingLocation);
+		startingLocation[0] += btnCreate.getWidth() / 2;
+		TakePhotoActivity.startCameraFromLocation(startingLocation, this);
+		overridePendingTransition(0, 0);
 	}
 }
