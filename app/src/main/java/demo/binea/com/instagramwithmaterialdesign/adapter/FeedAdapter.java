@@ -6,9 +6,11 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
@@ -16,39 +18,44 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextSwitcher;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import demo.binea.com.instagramwithmaterialdesign.R;
 import demo.binea.com.instagramwithmaterialdesign.Util;
+import demo.binea.com.instagramwithmaterialdesign.view.SendingProgressView;
 
 /**
  * Created by xubinggui on 15/3/14.
  */
 public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements View.OnClickListener {
+	private static final int VIEW_TYPE_DEFAULT = 1;
+	private static final int VIEW_TYPE_LOADER = 2;
+
+	private static final DecelerateInterpolator DECCELERATE_INTERPOLATOR = new DecelerateInterpolator();
+	private static final AccelerateInterpolator ACCELERATE_INTERPOLATOR = new AccelerateInterpolator();
+	private static final OvershootInterpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(4);
 
 	private static final int ANIMATED_ITEMS_COUNT = 2;
 
 	private Context context;
 	private int lastAnimatedPosition = -1;
 	private int itemsCount = 0;
+	private boolean animateItems = false;
 
 	private final Map<Integer, Integer> likesCount = new HashMap<>();
-
 	private final Map<RecyclerView.ViewHolder, AnimatorSet> likeAnimations = new HashMap<>();
-
 	private final ArrayList<Integer> likedPositions = new ArrayList<>();
 
-	private static final DecelerateInterpolator DECCELERATE_INTERPOLATOR = new DecelerateInterpolator();
-	private static final AccelerateInterpolator ACCELERATE_INTERPOLATOR = new AccelerateInterpolator();
-	private static final OvershootInterpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(4);
-
 	private OnFeedItemClickListener onFeedItemClickListener;
+
+	private boolean showLoadingView = false;
+	private int loadingViewSize = Util.dpToPx(200);
 
 	public FeedAdapter(Context context) {
 		this.context = context;
@@ -57,11 +64,35 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	@Override
 	public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 		final View view = LayoutInflater.from(context).inflate(R.layout.item_feed, parent, false);
-		return new CellFeedViewHolder(view);
+		final CellFeedViewHolder cellFeedViewHolder = new CellFeedViewHolder(view);
+		if (viewType == VIEW_TYPE_DEFAULT) {
+			cellFeedViewHolder.btnComments.setOnClickListener(this);
+			cellFeedViewHolder.btnMore.setOnClickListener(this);
+			cellFeedViewHolder.ivFeedCenter.setOnClickListener(this);
+			cellFeedViewHolder.btnLike.setOnClickListener(this);
+			cellFeedViewHolder.ivUserProfile.setOnClickListener(this);
+		} else if (viewType == VIEW_TYPE_LOADER) {
+			View bgView = new View(context);
+			bgView.setLayoutParams(new FrameLayout.LayoutParams(
+					ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+			));
+			bgView.setBackgroundColor(0x77ffffff);
+			cellFeedViewHolder.vImageRoot.addView(bgView);
+			cellFeedViewHolder.vProgressBg = bgView;
+
+			FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(loadingViewSize, loadingViewSize);
+			params.gravity = Gravity.CENTER;
+			SendingProgressView sendingProgressView = new SendingProgressView(context);
+			sendingProgressView.setLayoutParams(params);
+			cellFeedViewHolder.vImageRoot.addView(sendingProgressView);
+			cellFeedViewHolder.vSendingProgress = sendingProgressView;
+		}
+
+		return cellFeedViewHolder;
 	}
 
 	private void runEnterAnimation(View view, int position) {
-		if (position >= ANIMATED_ITEMS_COUNT - 1) {
+		if (!animateItems || position >= ANIMATED_ITEMS_COUNT - 1) {
 			return;
 		}
 
@@ -79,7 +110,15 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	@Override
 	public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
 		runEnterAnimation(viewHolder.itemView, position);
-		CellFeedViewHolder holder = (CellFeedViewHolder) viewHolder;
+		final CellFeedViewHolder holder = (CellFeedViewHolder) viewHolder;
+		if (getItemViewType(position) == VIEW_TYPE_DEFAULT) {
+			bindDefaultFeedItem(position, holder);
+		} else if (getItemViewType(position) == VIEW_TYPE_LOADER) {
+			bindLoadingFeedItem(holder);
+		}
+	}
+
+	private void bindDefaultFeedItem(int position, CellFeedViewHolder holder) {
 		if (position % 2 == 0) {
 			holder.ivFeedCenter.setImageResource(R.drawable.img_feed_center_1);
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_1);
@@ -87,24 +126,13 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 			holder.ivFeedCenter.setImageResource(R.drawable.img_feed_center_2);
 			holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_2);
 		}
-		likesCount.put(position, 123);
-		updateLikesCounter(holder, false, true);
+		updateLikesCounter(holder, false);
 		updateHeartButton(holder, false);
 
-		holder.btnComments.setOnClickListener(this);
 		holder.btnComments.setTag(position);
-
-		holder.btnMore.setOnClickListener(this);
 		holder.btnMore.setTag(position);
-
-		holder.btnLike.setOnClickListener(this);
-		holder.btnLike.setTag(holder);
-
-		holder.ivFeedCenter.setOnClickListener(this);
 		holder.ivFeedCenter.setTag(holder);
-
-		holder.ivUserProfile.setOnClickListener(this);
-		holder.ivUserProfile.setTag(position);
+		holder.btnLike.setTag(holder);
 
 		if (likeAnimations.containsKey(holder)) {
 			likeAnimations.get(holder).cancel();
@@ -112,121 +140,53 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 		resetLikeAnimationState(holder);
 	}
 
+	private void bindLoadingFeedItem(final CellFeedViewHolder holder) {
+		holder.ivFeedCenter.setImageResource(R.drawable.img_feed_center_1);
+		holder.ivFeedBottom.setImageResource(R.drawable.img_feed_bottom_1);
+		holder.vSendingProgress.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+			@Override
+			public boolean onPreDraw() {
+				holder.vSendingProgress.getViewTreeObserver().removeOnPreDrawListener(this);
+				holder.vSendingProgress.simulateProgress();
+				return true;
+			}
+		});
+		holder.vSendingProgress.setOnLoadingFinishedListener(new SendingProgressView.OnLoadingFinishedListener() {
+			@Override
+			public void onLoadingFinished() {
+				holder.vSendingProgress.animate().scaleY(0).scaleX(0).setDuration(200).setStartDelay(100);
+				holder.vProgressBg.animate().alpha(0.f).setDuration(200).setStartDelay(100)
+						.setListener(new AnimatorListenerAdapter() {
+							@Override
+							public void onAnimationEnd(Animator animation) {
+								holder.vSendingProgress.setScaleX(1);
+								holder.vSendingProgress.setScaleY(1);
+								holder.vProgressBg.setAlpha(1);
+								showLoadingView = false;
+								notifyItemChanged(0);
+							}
+						})
+						.start();
+			}
+		});
+	}
+
+	@Override
+	public int getItemViewType(int position) {
+		if (showLoadingView && position == 0) {
+			return VIEW_TYPE_LOADER;
+		} else {
+			return VIEW_TYPE_DEFAULT;
+		}
+	}
+
 	@Override
 	public int getItemCount() {
 		return itemsCount;
 	}
 
-	@Override
-	public void onClick(View v) {
-		CellFeedViewHolder holder;
-		switch (v.getId()){
-			case R.id.btnComments:
-				if (onFeedItemClickListener != null) {
-					onFeedItemClickListener.onCommentsClick(v, (Integer) v.getTag());
-				}
-				break;
-
-			case R.id.btnMore:
-				if (onFeedItemClickListener != null) {
-					onFeedItemClickListener.onMoreClick(v, (Integer) v.getTag());
-				}
-				break;
-
-			case R.id.btnLike:
-				holder = (CellFeedViewHolder) v.getTag();
-				if (!likedPositions.contains(holder.getPosition())) {
-					likedPositions.add(holder.getPosition());
-					updateLikesCounter(holder, true, true);
-					updateHeartButton(holder, true);
-				}else{
-					likedPositions.remove(holder.getPosition());
-					updateLikesCounter(holder,true, false);
-					updateHeartButton(holder, true);
-				}
-				break;
-
-			case R.id.ivFeedCenter:
-				holder = (CellFeedViewHolder) v.getTag();
-				if (!likedPositions.contains(holder.getPosition())) {
-					likedPositions.add(holder.getPosition());
-					updateLikesCounter(holder, true, true);
-					animatePhotoLike(holder);
-					updateHeartButton(holder, false);
-				}else{
-					likedPositions.remove(holder.getPosition());
-					updateLikesCounter(holder, true, false);
-					animatePhotoLike(holder);
-					updateHeartButton(holder, false);
-				}
-				break;
-
-			case R.id.ivUserProfile:
-				if(onFeedItemClickListener != null){
-					onFeedItemClickListener.onProfileClick(v, (Integer)v.getTag());
-				}
-				break;
-		}
-	}
-
-	public static class CellFeedViewHolder extends RecyclerView.ViewHolder {
-		@InjectView(R.id.ivFeedCenter)
-		ImageView ivFeedCenter;
-		@InjectView(R.id.ivFeedBottom)
-		ImageView ivFeedBottom;
-		@InjectView(R.id.btnComments)
-		ImageButton btnComments;
-		@InjectView(R.id.btnLike)
-		ImageButton btnLike;
-		@InjectView(R.id.btnMore)
-		ImageButton btnMore;
-		@InjectView(R.id.vBgLike)
-		View vBgLike;
-		@InjectView(R.id.ivLike)
-		ImageView ivLike;
-		@InjectView(R.id.tsLikesCounter)
-		TextSwitcher tsLikesCounter;
-		@InjectView(R.id.ivUserProfile)
-		ImageView ivUserProfile;
-		@InjectView(R.id.vImageRoot)
-		FrameLayout vImageRoot;
-		@InjectView(R.id.tv_like_counts)
-		TextView tv_like_counts;
-
-//		SendingProgressView vSendingProgress;
-		View vProgressBg;
-
-		public CellFeedViewHolder(View view) {
-			super(view);
-			ButterKnife.inject(this, view);
-		}
-
-	}
-
-	public void updateItems() {
-		itemsCount = 10;
-		notifyDataSetChanged();
-	}
-
-	public void setOnFeedItemClickListener(OnFeedItemClickListener onFeedItemClickListener) {
-		this.onFeedItemClickListener = onFeedItemClickListener;
-	}
-
-	public interface OnFeedItemClickListener {
-		public void onCommentsClick(View v, int position);
-		public void onMoreClick(View v,int tag);
-		public void onProfileClick(View v, int position);
-	}
-
-	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated, boolean isLiked) {
-
-		int currentLikesCount;
-		if(isLiked) {
-			currentLikesCount = likesCount.get(holder.getPosition()) + 1;
-		}else{
-			currentLikesCount = likesCount.get(holder.getPosition()) - 1;
-		}
-
+	private void updateLikesCounter(CellFeedViewHolder holder, boolean animated) {
+		int currentLikesCount = likesCount.get(holder.getPosition()) + 1;
 		String likesCountText = context.getResources().getQuantityString(
 				R.plurals.likes_count, currentLikesCount, currentLikesCount
 		);
@@ -243,10 +203,38 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 	private void updateHeartButton(final CellFeedViewHolder holder, boolean animated) {
 		if (animated) {
 			if (!likeAnimations.containsKey(holder)) {
-				updateHeartButtonAnimation(holder, true);
-			}else{
-				//like to unlike
-				updateHeartButtonAnimation(holder, false);
+				AnimatorSet animatorSet = new AnimatorSet();
+				likeAnimations.put(holder, animatorSet);
+
+				ObjectAnimator rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 0f, 360f);
+				rotationAnim.setDuration(300);
+				rotationAnim.setInterpolator(ACCELERATE_INTERPOLATOR);
+
+				ObjectAnimator bounceAnimX = ObjectAnimator.ofFloat(holder.btnLike, "scaleX", 0.2f, 1f);
+				bounceAnimX.setDuration(300);
+				bounceAnimX.setInterpolator(OVERSHOOT_INTERPOLATOR);
+
+				ObjectAnimator bounceAnimY = ObjectAnimator.ofFloat(holder.btnLike, "scaleY", 0.2f, 1f);
+				bounceAnimY.setDuration(300);
+				bounceAnimY.setInterpolator(OVERSHOOT_INTERPOLATOR);
+				bounceAnimY.addListener(new AnimatorListenerAdapter() {
+					@Override
+					public void onAnimationStart(Animator animation) {
+						holder.btnLike.setImageResource(R.drawable.ic_heart_red);
+					}
+				});
+
+				animatorSet.play(rotationAnim);
+				animatorSet.play(bounceAnimX).with(bounceAnimY).after(rotationAnim);
+
+				animatorSet.addListener(new AnimatorListenerAdapter() {
+					@Override
+					public void onAnimationEnd(Animator animation) {
+						resetLikeAnimationState(holder);
+					}
+				});
+
+				animatorSet.start();
 			}
 		} else {
 			if (likedPositions.contains(holder.getPosition())) {
@@ -257,12 +245,41 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 		}
 	}
 
-	private void resetLikeAnimationState(CellFeedViewHolder holder) {
-		holder.vBgLike.setVisibility(View.GONE);
-		holder.ivLike.setVisibility(View.GONE);
+	@Override
+	public void onClick(View view) {
+		final int viewId = view.getId();
+		if (viewId == R.id.btnComments) {
+			if (onFeedItemClickListener != null) {
+				onFeedItemClickListener.onCommentsClick(view, (Integer) view.getTag());
+			}
+		} else if (viewId == R.id.btnMore) {
+			if (onFeedItemClickListener != null) {
+				onFeedItemClickListener.onMoreClick(view, (Integer) view.getTag());
+			}
+		} else if (viewId == R.id.btnLike) {
+			CellFeedViewHolder holder = (CellFeedViewHolder) view.getTag();
+			if (!likedPositions.contains(holder.getPosition())) {
+				likedPositions.add(holder.getPosition());
+				updateLikesCounter(holder, true);
+				updateHeartButton(holder, true);
+			}
+		} else if (viewId == R.id.ivFeedCenter) {
+			CellFeedViewHolder holder = (CellFeedViewHolder) view.getTag();
+			if (!likedPositions.contains(holder.getPosition())) {
+				likedPositions.add(holder.getPosition());
+				updateLikesCounter(holder, true);
+				animatePhotoLike(holder);
+				updateHeartButton(holder, false);
+			}
+		} else if (viewId == R.id.ivUserProfile) {
+			if (onFeedItemClickListener != null) {
+				onFeedItemClickListener.onProfileClick(view);
+			}
+		}
 	}
 
 	private void animatePhotoLike(final CellFeedViewHolder holder) {
+		if (!likeAnimations.containsKey(holder)) {
 			holder.vBgLike.setVisibility(View.VISIBLE);
 			holder.ivLike.setVisibility(View.VISIBLE);
 
@@ -310,53 +327,74 @@ public class FeedAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> i
 				}
 			});
 			animatorSet.start();
+		}
 	}
 
-	private void updateHeartButtonAnimation(final CellFeedViewHolder holder, final boolean isLiked){
-		AnimatorSet animatorSet = new AnimatorSet();
-		if(isLiked) {
-			likeAnimations.put(holder, animatorSet);
-		}else{
-			likeAnimations.remove(holder);
+	private void resetLikeAnimationState(CellFeedViewHolder holder) {
+		likeAnimations.remove(holder);
+		holder.vBgLike.setVisibility(View.GONE);
+		holder.ivLike.setVisibility(View.GONE);
+	}
+
+	public void updateItems(boolean animated) {
+		itemsCount = 10;
+		animateItems = animated;
+		fillLikesWithRandomValues();
+		notifyDataSetChanged();
+	}
+
+	private void fillLikesWithRandomValues() {
+		for (int i = 0; i < getItemCount(); i++) {
+			likesCount.put(i, new Random().nextInt(100));
+		}
+	}
+
+	public void setOnFeedItemClickListener(OnFeedItemClickListener onFeedItemClickListener) {
+		this.onFeedItemClickListener = onFeedItemClickListener;
+	}
+
+	public void showLoadingView() {
+		showLoadingView = true;
+		notifyItemChanged(0);
+	}
+
+	public static class CellFeedViewHolder extends RecyclerView.ViewHolder {
+		@InjectView(R.id.ivFeedCenter)
+		ImageView ivFeedCenter;
+		@InjectView(R.id.ivFeedBottom)
+		ImageView ivFeedBottom;
+		@InjectView(R.id.btnComments)
+		ImageButton btnComments;
+		@InjectView(R.id.btnLike)
+		ImageButton btnLike;
+		@InjectView(R.id.btnMore)
+		ImageButton btnMore;
+		@InjectView(R.id.vBgLike)
+		View vBgLike;
+		@InjectView(R.id.ivLike)
+		ImageView ivLike;
+		@InjectView(R.id.tsLikesCounter)
+		TextSwitcher tsLikesCounter;
+		@InjectView(R.id.ivUserProfile)
+		ImageView ivUserProfile;
+		@InjectView(R.id.vImageRoot)
+		FrameLayout vImageRoot;
+
+		SendingProgressView vSendingProgress;
+		View vProgressBg;
+
+		public CellFeedViewHolder(View view) {
+			super(view);
+			ButterKnife.inject(this, view);
 		}
 
-		ObjectAnimator rotationAnim;
-		if(isLiked) {
-			rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 0f, 360f);
-		}else{
-			rotationAnim = ObjectAnimator.ofFloat(holder.btnLike, "rotation", 360f, 0f);
-		}
-		rotationAnim.setDuration(300);
-		rotationAnim.setInterpolator(ACCELERATE_INTERPOLATOR);
+	}
 
-		ObjectAnimator bounceAnimX = ObjectAnimator.ofFloat(holder.btnLike, "scaleX", 0.2f, 1f);
-		bounceAnimX.setDuration(300);
-		bounceAnimX.setInterpolator(OVERSHOOT_INTERPOLATOR);
+	public interface OnFeedItemClickListener {
+		public void onCommentsClick(View v, int position);
 
-		ObjectAnimator bounceAnimY = ObjectAnimator.ofFloat(holder.btnLike, "scaleY", 0.2f, 1f);
-		bounceAnimY.setDuration(300);
-		bounceAnimY.setInterpolator(OVERSHOOT_INTERPOLATOR);
-		bounceAnimY.addListener(new AnimatorListenerAdapter() {
-			@Override
-			public void onAnimationStart(Animator animation) {
-				if (isLiked) {
-					holder.btnLike.setImageResource(R.drawable.ic_heart_outline_grey);
-				} else {
-					holder.btnLike.setImageResource(R.drawable.ic_heart_red);
-				}
-			}
-		});
+		public void onMoreClick(View v, int position);
 
-		animatorSet.play(rotationAnim);
-		animatorSet.play(bounceAnimX).with(bounceAnimY).after(rotationAnim);
-
-		animatorSet.addListener(new AnimatorListenerAdapter() {
-			@Override
-			public void onAnimationEnd(Animator animation) {
-				resetLikeAnimationState(holder);
-			}
-		});
-
-		animatorSet.start();
+		public void onProfileClick(View v);
 	}
 }
